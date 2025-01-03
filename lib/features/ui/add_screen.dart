@@ -12,15 +12,35 @@ class AddPage extends StatefulWidget {
 
 class _AddPageState extends State<AddPage> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _purchaseDayController = TextEditingController();
-  final TextEditingController _postDayController = TextEditingController();
-  final TextEditingController _expiresDayController = TextEditingController();
+  String? _postMonth;
+  String? _expiresMonth;
+
+  Future<void> _selectMonth(
+    BuildContext context,
+    ValueChanged<String?> onSelected,
+  ) async {
+    final now = DateTime.now();
+    // 現在の年月の1日を初期日として設定
+    final initialDate = DateTime(now.year, now.month, 1);
+    final result = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+      helpText: '月を選択',
+      selectableDayPredicate: (date) => date.day == 1,
+    );
+
+    if (result != null) {
+      onSelected('${result.year}-${result.month.toString().padLeft(2, '0')}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TODO作成'),
+        title: const Text('株主優待の追加'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -31,32 +51,39 @@ class _AddPageState extends State<AddPage> {
               controller: _nameController,
               decoration: const InputDecoration(labelText: '株主優待の名称'),
             ),
-            TextField(
-              controller: _purchaseDayController,
-              decoration: const InputDecoration(labelText: '購入日 (YYYY-MM-DD)'),
+            ListTile(
+              title: Text('届く予定月: ${_postMonth ?? "未選択"}'),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () {
+                _selectMonth(context, (value) {
+                  setState(() {
+                    _postMonth = value;
+                  });
+                });
+              },
             ),
-            TextField(
-              controller: _postDayController,
-              decoration:
-                  const InputDecoration(labelText: '届く予定日 (YYYY-MM-DD)'),
-            ),
-            TextField(
-              controller: _expiresDayController,
-              decoration: const InputDecoration(labelText: '期限日 (YYYY-MM-DD)'),
+            ListTile(
+              title: Text('期限月: ${_expiresMonth ?? "未選択"}'),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () {
+                _selectMonth(context, (value) {
+                  setState(() {
+                    _expiresMonth = value;
+                  });
+                });
+              },
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 final name = _nameController.text;
-                final purchaseDay = DateTime.parse(_purchaseDayController.text);
-                final postDay = DateTime.parse(_postDayController.text);
-                final expiresDay = DateTime.parse(_expiresDayController.text);
                 widget.onAdd(
                   ShareholderBenefits(
                     name: name,
-                    purchaseDay: purchaseDay,
-                    postDay: postDay,
-                    expiresDay: expiresDay,
+                    postDay: DateTime.parse('${_postMonth!}-01'),
+                    expiresDay: _expiresMonth != null
+                        ? DateTime.parse('${_expiresMonth!}-01')
+                        : null,
                     isUsed: false,
                   ),
                 );
